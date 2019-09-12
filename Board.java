@@ -1,31 +1,40 @@
-import com.sun.jdi.connect.Connector;
-import edu.princeton.cs.algs4.In;
 import edu.princeton.cs.algs4.Stack;
 
 import java.lang.reflect.Array;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.Random;
 
 public class Board {
     private int m;
     private int twodimlen;
     private int[] blocks;
-    private int [][] input;
+    public int [][] input;
 
     // create a board from an n-by-n array of tiles,
     // where tiles[row][col] = tile at (row, col)
     public Board(int[][] tiles){
-        input = tiles;
-        blocks = new int[tiles.length * tiles.length];
-        m = blocks.length;
+        this.input = tiles;
+        this.blocks = new int[input.length * input.length];
+        this.m = blocks.length;
+        this.twodimlen = input.length;
         //creating 1D version of tiles
-        for (int i = 0; i < tiles.length; i++){
-            for (int j = 0; j < tiles.length; j++){
-                blocks[(i * tiles.length) + j] = tiles[i][j];
+        for (int i = 0; i < input.length; i++){
+            for (int j = 0; j < input.length; j++){
+                blocks[(i * input.length) + j] = input[i][j];
             }
         }
-        twodimlen = Math.toIntExact(Math.round(Math.sqrt(blocks.length)));
+    }
+
+    private static int[][] deepCopy(int[][] original) {
+        if (original == null) {
+            return null;
+        }
+        final int[][] result = new int[original.length][];
+        for (int i = 0; i < original.length; i++) {
+            result[i] = Arrays.copyOf(original[i], original[i].length);
+        }
+        return result;
     }
 
     // string representation of this board
@@ -57,9 +66,19 @@ public class Board {
         return zeronumber;
     }
 
-    private void swap(int first, int second){
-
+    private int zeroIndex2DX() {
+        return zeroIndex() % twodimlen;
     }
+
+    private int zeroIndex2DY() {
+        return Math.toIntExact(Math.round(Math.floor(zeroIndex() / twodimlen)));
+    }
+
+    /*
+    private int aboveNumber() {
+        return input[zeroIndex2DY() - 1][zeroIndex2DY()];
+    }
+    */
 
     // number of tiles out of place
     public int hamming(){
@@ -110,42 +129,46 @@ public class Board {
     // all neighboring boards
     public Iterable<Board> neighbors(){
         Stack<Board> neighs = new Stack<>();
-        if (zeroIndex() + 1 <= m - 1) { // switch for BLOCK TO RIGHT
-            Board copy = new Board(input); // copy of board we're working with
-            int firstvar = copy.blocks[zeroIndex() + 1];
-            int secondvar = copy.blocks[zeroIndex()];
-            copy.blocks[zeroIndex()] = firstvar;
-            copy.blocks[zeroIndex() + 1] = secondvar;
+        if (zeroIndex2DX() + 1 < twodimlen) { // switch for BLOCK TO RIGHT
+            int [][] newinput = deepCopy(input);
+            int firstvar2D = 0;
+            int secondvar2D = newinput[zeroIndex2DY()][zeroIndex2DX() + 1];
+            newinput[zeroIndex2DY()][zeroIndex2DX()] = secondvar2D;
+            newinput[zeroIndex2DY()][zeroIndex2DX() + 1] = 0;
+            Board copy = new Board(newinput); // copy of board we're working with
             neighs.push(copy);
         }
-        if (zeroIndex() - 1 >= 0) { // BLOCK TO LEFT
-            Board copy = new Board(input);
-            int firstvar = copy.blocks[zeroIndex() - 1];
-            int secondvar = copy.blocks[zeroIndex()];
-            copy.blocks[zeroIndex()] = firstvar;
-            copy.blocks[zeroIndex() - 1] = secondvar;
+        if (zeroIndex2DX() - 1 >= 0) { // BLOCK TO LEFT
+            int [][] newinput2 = deepCopy(input);
+            int firstvar2D = 0;
+            int secondvar2D = newinput2[zeroIndex2DY()][zeroIndex2DX() - 1];
+            newinput2[zeroIndex2DY()][zeroIndex2DX()] = secondvar2D;
+            newinput2[zeroIndex2DY()][zeroIndex2DX() - 1] = 0;
+            Board copy2 = new Board(newinput2); // copy of board we're working with
+            neighs.push(copy2);
+        }
+        if (zeroIndex2DY() + 1 < twodimlen) { // BLOCK BELOW
+            int [][] newinput = deepCopy(input);
+            int firstvar2D = 0;
+            int secondvar2D = newinput[zeroIndex2DY() + 1][zeroIndex2DX()];
+            newinput[zeroIndex2DY()][zeroIndex2DX()] = secondvar2D;
+            newinput[zeroIndex2DY() + 1][zeroIndex2DX()] = 0;
+            Board copy = new Board(newinput); // copy of board we're working with
             neighs.push(copy);
         }
-        if (zeroIndex() + twodimlen <= m - 1) { // BLOCK BELOW
-            Board copy = new Board(input);
-            int firstvar = copy.blocks[zeroIndex() + twodimlen];
-            int secondvar = copy.blocks[zeroIndex()];
-            copy.blocks[zeroIndex()] = firstvar;
-            copy.blocks[zeroIndex() + twodimlen] = secondvar;
-            neighs.push(copy);
-        }
-        if (zeroIndex() - twodimlen >= 0) { // BLOCK ABOVE
-            Board copy = new Board(input);
-            int firstvar = copy.blocks[zeroIndex() - twodimlen];
-            int secondvar = copy.blocks[zeroIndex()];
-            copy.blocks[zeroIndex()] = firstvar;
-            copy.blocks[zeroIndex() - twodimlen] = secondvar;
+        if (zeroIndex2DY() - 1 >= 0) { // BLOCK ABOVE
+            int [][] newinput = deepCopy(input);
+            int firstvar2D = 0;
+            int secondvar2D = newinput[zeroIndex2DY() - 1][zeroIndex2DX()];
+            newinput[zeroIndex2DY()][zeroIndex2DX()] = secondvar2D;
+            newinput[zeroIndex2DY() - 1][zeroIndex2DX()] = 0;
+            Board copy = new Board(newinput); // copy of board we're working with
             neighs.push(copy);
         }
         return neighs;
     }
 
-    // a board that is obtained by exchanging any pair of tiles. just returns single one of these. 
+    // a board that is obtained by exchanging any pair of tiles. just returns single one of these.
     public Board twin(){
         Random first = new Random();
         int firstint = first.nextInt(m);
@@ -180,7 +203,14 @@ public class Board {
         benny[2][1] = 0;
         benny[2][2] = 6;
         Board sampleboard = new Board(benny);
-        //System.out.println(sampleboard.toString()); //works
-        System.out.println(sampleboard.twin());
+        //System.out.println(sampleboard.toString());
+        Iterator itr = sampleboard.neighbors().iterator();
+        while(itr.hasNext()) {
+            Object element = itr.next();
+            Board newboard = (Board) element;
+            System.out.println("neighbor");
+            System.out.print(newboard);
+            System.out.println(newboard.manhattan());
+        }
     }
 }
